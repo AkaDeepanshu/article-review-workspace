@@ -14,25 +14,26 @@ export function ProjectPageClient({ projectId }: { projectId: string }) {
 
   const { data: project, isLoading } = api.project.get.useQuery({ projectId });
 
-  const exportCsv = api.article.exportCsv.useQuery(
-    { projectId },
-    { enabled: false },
-  );
-
-  const isOwner = project?.currentUserRole === "OWNER";
-
-  async function handleExport() {
-    const result = await exportCsv.refetch();
-    if (result.data) {
-      const blob = new Blob([result.data.content], { type: "text/csv" });
+  const exportCsvMutation = api.article.exportCsv.useMutation({
+    onSuccess: (data) => {
+      const blob = new Blob([data.content], { type: "text/csv" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = result.data.filename;
+      a.download = data.filename;
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
       URL.revokeObjectURL(url);
       toast.success("CSV exported successfully");
-    }
+    },
+    onError: (err) => toast.error(`Export failed: ${err.message}`),
+  });
+
+  const isOwner = project?.currentUserRole === "OWNER";
+
+  function handleExport() {
+    exportCsvMutation.mutate({ projectId });
   }
 
   if (isLoading) {
@@ -54,9 +55,9 @@ export function ProjectPageClient({ projectId }: { projectId: string }) {
     <ProjectActionsProvider
       value={{
         openImport: () => setImportOpen(true),
-        exportCsv: () => void handleExport(),
+        exportCsv: handleExport,
         isOwner,
-        isExporting: exportCsv.isFetching,
+        isExporting: exportCsvMutation.isPending,
       }}
     >
       <div className="space-y-6">

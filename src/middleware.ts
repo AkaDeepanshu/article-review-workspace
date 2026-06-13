@@ -18,9 +18,13 @@ export default edgeAuth((req) => {
     return NextResponse.redirect(new URL("/orgs", req.nextUrl.origin));
   }
 
+  if (pathname === "/register" && isLoggedIn) {
+    return NextResponse.redirect(new URL("/orgs", req.nextUrl.origin));
+  }
+
   return NextResponse.next();
 });
 
 export const config = {
-  matcher: ["/orgs/:path*", "/projects/:path*", "/login"],
+  matcher: ["/orgs/:path*", "/projects/:path*", "/login", "/register"],
 };

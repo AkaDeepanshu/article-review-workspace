@@ -145,7 +145,7 @@ export const articleRouter = createTRPCRouter({
 
   exportCsv: projectMemberProcedure
     .input(z.object({ projectId: z.string() }))
-    .query(async ({ ctx, input }) => {
+    .mutation(async ({ ctx, input }) => {
       const articles = await ctx.db.article.findMany({
         where: { projectId: input.projectId },
         include: {

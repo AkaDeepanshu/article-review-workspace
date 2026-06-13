@@ -30,6 +30,14 @@ import { api, type RouterOutputs } from "easySLR/trpc/react";
 
 type ArticleItem = RouterOutputs["article"]["list"]["items"][number];
 
+function resetPagination(
+  setCurrentCursor: (v: string | undefined) => void,
+  setCursorStack: (v: string[]) => void,
+) {
+  setCurrentCursor(undefined);
+  setCursorStack([]);
+}
+
 export function ArticleTable({
   projectId,
   isOwner,
@@ -44,6 +52,10 @@ export function ArticleTable({
   const [sortBy, setSortBy] = useState<"year" | "title" | "status">("title");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const [cursorStack, setCursorStack] = useState<string[]>([]);
+  const [currentCursor, setCurrentCursor] = useState<string | undefined>(
+    undefined,
+  );
 
   const utils = api.useUtils();
   const selectedIds = Object.keys(rowSelection).filter((k) => rowSelection[k]);
@@ -54,7 +66,8 @@ export function ArticleTable({
     status: status === "ALL" ? undefined : status,
     sortBy,
     sortDir,
-    limit: 50,
+    limit: 25,
+    cursor: currentCursor,
   };
 
   const { data, isLoading, error, refetch } = api.article.list.useQuery(
@@ -64,6 +77,26 @@ export function ArticleTable({
   const deleteArticle = api.article.delete.useMutation({
     onSuccess: () => void utils.article.list.invalidate(),
   });
+
+  function handleSearchChange(value: string) {
+    setSearch(value);
+    resetPagination(setCurrentCursor, setCursorStack);
+  }
+
+  function handleStatusChange(value: ReviewStatus | "ALL") {
+    setStatus(value);
+    resetPagination(setCurrentCursor, setCursorStack);
+  }
+
+  function handleSortByChange(value: "year" | "title" | "status") {
+    setSortBy(value);
+    resetPagination(setCurrentCursor, setCursorStack);
+  }
+
+  function handleSortDirChange(value: "asc" | "desc") {
+    setSortDir(value);
+    resetPagination(setCurrentCursor, setCursorStack);
+  }
 
   const columns = useMemo<ColumnDef<ArticleItem>[]>(
     () => [
@@ -175,8 +208,11 @@ export function ArticleTable({
     manualSorting: true,
   });
 
-  if (isLoading) return <TableSkeleton />;
+  if (isLoading && !data) return <TableSkeleton />;
   if (error) return <ErrorState onRetry={() => refetch()} />;
+
+  const showPagination =
+    cursorStack.length > 0 || !!data?.nextCursor;
 
   return (
     <div className="space-y-4">
@@ -190,14 +226,21 @@ export function ArticleTable({
 
       <ArticleTableToolbar
         search={search}
-        onSearchChange={setSearch}
+        onSearchChange={handleSearchChange}
         status={status}
-        onStatusChange={setStatus}
+        onStatusChange={handleStatusChange}
         sortBy={sortBy}
-        onSortByChange={setSortBy}
+        onSortByChange={handleSortByChange}
         sortDir={sortDir}
-        onSortDirChange={setSortDir}
+        onSortDirChange={handleSortDirChange}
       />
+
+      {data && data.items.length > 0 && (
+        <p className="text-xs text-muted-foreground">
+          Showing {data.items.length} articles
+          {showPagination ? ` · Page ${cursorStack.length + 1}` : ""}
+        </p>
+      )}
 
       {!data?.items.length ? (
         <EmptyState
@@ -211,44 +254,85 @@ export function ArticleTable({
           }
         />
       ) : (
-        <div className="rounded-lg border">
-          <Table>
-            <TableHeader className="sticky top-0 z-10 bg-muted/80 backdrop-blur">
-              {table.getHeaderGroups().map((hg) => (
-                <TableRow key={hg.id}>
-                  {hg.headers.map((header) => (
-                    <TableHead key={header.id}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext(),
-                          )}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                  className="hover:bg-muted/50"
+        <>
+          <div className="rounded-lg border">
+            <Table>
+              <TableHeader className="sticky top-0 z-10 bg-muted/80 backdrop-blur">
+                {table.getHeaderGroups().map((hg) => (
+                  <TableRow key={hg.id}>
+                    {hg.headers.map((header) => (
+                      <TableHead key={header.id}>
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext(),
+                            )}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableHeader>
+              <TableBody>
+                {table.getRowModel().rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    data-state={row.getIsSelected() && "selected"}
+                    className="hover:bg-muted/50"
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id} className="text-sm">
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {showPagination && (
+            <div className="flex items-center justify-between px-1">
+              <p className="text-sm text-muted-foreground">
+                Page {cursorStack.length + 1}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const newStack = [...cursorStack];
+                    newStack.pop();
+                    setCursorStack(newStack);
+                    setCurrentCursor(
+                      newStack.length > 0
+                        ? newStack[newStack.length - 1]
+                        : undefined,
+                    );
+                  }}
+                  disabled={cursorStack.length === 0 || isLoading}
                 >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="text-sm">
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext(),
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+                  ← Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (!data?.nextCursor) return;
+                    setCursorStack([...cursorStack, data.nextCursor]);
+                    setCurrentCursor(data.nextCursor);
+                  }}
+                  disabled={!data?.nextCursor || isLoading}
+                >
+                  Next →
+                </Button>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
