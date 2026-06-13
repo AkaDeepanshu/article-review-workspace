@@ -63,9 +63,7 @@ export function ImportDialog({
     onError: (err) => toast.error(err.message),
   });
 
-  const importableRows = preview
-    ? [...preview.valid, ...preview.warnings]
-    : [];
+  const importableRows = preview ? [...preview.valid, ...preview.warnings] : [];
 
   function handleClose() {
     setStep("upload");
@@ -78,7 +76,11 @@ export function ImportDialog({
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
-      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+      <DialogContent
+        className={`max-h-[90vh] overflow-y-auto ${
+          step === "upload" ? "max-w-2xl" : "sm:max-w-3xl"
+        }`}
+      >
         <DialogHeader>
           <DialogTitle>Import Articles</DialogTitle>
           <DialogDescription>
@@ -100,13 +102,9 @@ export function ImportDialog({
           />
         )}
 
-        {step === "preview" && preview && (
-          <PreviewTable preview={preview} />
-        )}
+        {step === "preview" && preview && <PreviewTable preview={preview} />}
 
-        {step === "summary" && summary && (
-          <ImportSummary {...summary} />
-        )}
+        {step === "summary" && summary && <ImportSummary {...summary} />}
 
         <DialogFooter>
           {step === "preview" && (
@@ -121,7 +119,9 @@ export function ImportDialog({
                     rows: importableRows,
                   })
                 }
-                disabled={confirmImport.isPending || importableRows.length === 0}
+                disabled={
+                  confirmImport.isPending || importableRows.length === 0
+                }
               >
                 {confirmImport.isPending
                   ? "Importing…"
@@ -129,9 +129,7 @@ export function ImportDialog({
               </Button>
             </>
           )}
-          {step === "summary" && (
-            <Button onClick={handleClose}>Done</Button>
-          )}
+          {step === "summary" && <Button onClick={handleClose}>Done</Button>}
         </DialogFooter>
       </DialogContent>
     </Dialog>
