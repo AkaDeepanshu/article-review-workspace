@@ -1,48 +1,70 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
     provider = "prisma-client-js"
     output   = "../generated/prisma"
 }
 
 datasource db {
-    provider = "postgresql"
-    // NOTE: When using mysql or sqlserver, uncomment the @db.Text annotations in model Account below
-    // Further reading:
-    // https://next-auth.js.org/adapters/prisma#create-the-prisma-schema
-    // https://www.prisma.io/docs/reference/api-reference/prisma-schema-reference#string
-    url      = env("DATABASE_URL")
+    provider  = "postgresql"
+    url       = env("DATABASE_URL")
+    directUrl = env("DIRECT_URL")
 }
 
-model Post {
-    id        Int      @id @default(autoincrement())
-    name      String
+enum OrgRole {
+    OWNER
+    MEMBER
+}
+
+enum ProjectRole {
+    OWNER
+    REVIEWER
+}
+
+enum ReviewStatus {
+    PENDING
+    INCLUDED
+    EXCLUDED
+    MAYBE
+}
+
+enum Confidence {
+    HIGH
+    MEDIUM
+    LOW
+}
+
+model User {
+    id            String    @id @default(cuid())
+    name          String?
+    email         String?   @unique
+    emailVerified DateTime?
+    image         String?
+    passwordHash  String?
+    accounts      Account[]
+    sessions      Session[]
+
+    organizationMembers OrganizationMember[]
+    projectMembers      ProjectMember[]
+    articleReviews      ArticleReview[]
+
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
-
-    createdBy   User   @relation(fields: [createdById], references: [id])
-    createdById String
-
-    @@index([name])
 }
 
-// Necessary for Next auth
 model Account {
     id                       String  @id @default(cuid())
     userId                   String
     type                     String
     provider                 String
     providerAccountId        String
-    refresh_token            String? // @db.Text
-    access_token             String? // @db.Text
+    refresh_token            String?
+    access_token             String?
     expires_at               Int?
     token_type               String?
     scope                    String?
-    id_token                 String? // @db.Text
+    id_token                 String?
     session_state            String?
-    user                     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
     refresh_token_expires_in Int?
+    user                     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
     @@unique([provider, providerAccountId])
 }
@@ -55,21 +77,107 @@ model Session {
     user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-model User {
-    id            String    @id @default(cuid())
-    name          String?
-    email         String?   @unique
-    emailVerified DateTime?
-    image         String?
-    accounts      Account[]
-    sessions      Session[]
-    posts         Post[]
-}
-
 model VerificationToken {
     identifier String
     token      String   @unique
     expires    DateTime
 
     @@unique([identifier, token])
+}
+
+model Organization {
+    id        String   @id @default(cuid())
+    name      String
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    members  OrganizationMember[]
+    projects Project[]
+}
+
+model OrganizationMember {
+    id             String   @id @default(cuid())
+    organizationId String
+    userId         String
+    role           OrgRole  @default(MEMBER)
+    createdAt      DateTime @default(now())
+
+    organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+    user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@unique([organizationId, userId])
+    @@index([userId])
+}
+
+model Project {
+    id             String   @id @default(cuid())
+    name           String
+    organizationId String
+    createdAt      DateTime @default(now())
+    updatedAt      DateTime @updatedAt
+
+    organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+    members      ProjectMember[]
+    articles     Article[]
+
+    @@index([organizationId])
+}
+
+model ProjectMember {
+    id        String      @id @default(cuid())
+    projectId String
+    userId    String
+    role      ProjectRole @default(REVIEWER)
+    createdAt DateTime    @default(now())
+
+    project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+    user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@unique([projectId, userId])
+    @@index([userId, projectId])
+}
+
+model Article {
+    id             String   @id @default(cuid())
+    projectId      String
+    pmid           String?
+    title          String
+    authors        String?
+    citation       String?
+    firstAuthor    String?
+    journal        String?
+    year           Int?
+    createDate     String?
+    pmcid          String?
+    nihmsId        String?
+    doi            String?
+    dedupHash      String
+    importWarnings Json?
+    createdAt      DateTime @default(now())
+    updatedAt      DateTime @updatedAt
+
+    project Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+    reviews ArticleReview[]
+
+    @@unique([projectId, dedupHash])
+    @@index([projectId])
+    @@index([projectId, title])
+}
+
+model ArticleReview {
+    id         String        @id @default(cuid())
+    articleId  String
+    reviewerId String
+    status     ReviewStatus  @default(PENDING)
+    note       String?
+    confidence Confidence?
+    createdAt  DateTime      @default(now())
+    updatedAt  DateTime      @updatedAt
+
+    article  Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+    reviewer User    @relation(fields: [reviewerId], references: [id], onDelete: Cascade)
+
+    @@unique([articleId, reviewerId])
+    @@index([reviewerId])
+    @@index([articleId])
 }

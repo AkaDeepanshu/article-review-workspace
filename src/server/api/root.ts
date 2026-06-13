@@ -1,23 +1,18 @@
-import { postRouter } from "easySLR/server/api/routers/post";
+import { articleRouter } from "easySLR/server/api/routers/article";
+import { importRouter } from "easySLR/server/api/routers/import";
+import { organizationRouter } from "easySLR/server/api/routers/organization";
+import { projectRouter } from "easySLR/server/api/routers/project";
+import { reviewRouter } from "easySLR/server/api/routers/review";
 import { createCallerFactory, createTRPCRouter } from "easySLR/server/api/trpc";
 
-/**
- * This is the primary router for your server.
- *
- * All routers added in /api/routers should be manually added here.
- */
 export const appRouter = createTRPCRouter({
-  post: postRouter,
+  organization: organizationRouter,
+  project: projectRouter,
+  article: articleRouter,
+  review: reviewRouter,
+  import: importRouter,
 });
 
-// export type definition of API
 export type AppRouter = typeof appRouter;
 
-/**
- * Create a server-side caller for the tRPC API.
- * @example
- * const trpc = createCaller(createContext);
- * const res = await trpc.post.all();
- *       ^? Post[]
- */
 export const createCaller = createCallerFactory(appRouter);

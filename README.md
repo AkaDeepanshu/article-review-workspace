@@ -1,29 +1,116 @@
-# Create T3 App
+# ArticleDesk
 
-This is a [T3 Stack](https://create.t3.gg/) project bootstrapped with `create-t3-app`.
+ArticleDesk is a collaborative workspace for researchers to import, organize, and screen research articles for systematic literature reviews.
 
-## What's next? How do I make an app with this?
+**Tagline:** Systematic literature review, simplified.
 
-We try to keep this project as simple as possible, so you can start with just the scaffolding we set up for you, and add additional things later when they become necessary.
+## Tech Stack
 
-If you are not familiar with the different technologies used in this project, please refer to the respective docs. If you still are in the wind, please join our [Discord](https://t3.gg/discord) and ask for help.
+- **Next.js 15** (App Router) + TypeScript
+- **Tailwind CSS** + shadcn/ui
+- **Prisma ORM** + PostgreSQL (Supabase)
+- **NextAuth/Auth.js** for authentication (Credentials provider)
+- **tRPC** for end-to-end typesafe API
+- **TanStack Table** for the article review table
+- **Vitest** for tests
 
-- [Next.js](https://nextjs.org)
-- [NextAuth.js](https://next-auth.js.org)
-- [Prisma](https://prisma.io)
-- [Drizzle](https://orm.drizzle.team)
-- [Tailwind CSS](https://tailwindcss.com)
-- [tRPC](https://trpc.io)
+## Getting Started
 
-## Learn More
+### Prerequisites
 
-To learn more about the [T3 Stack](https://create.t3.gg/), take a look at the following resources:
+- Node.js 20+
+- PostgreSQL database (Supabase recommended)
 
-- [Documentation](https://create.t3.gg/)
-- [Learn the T3 Stack](https://create.t3.gg/en/faq#what-learning-resources-are-currently-available) — Check out these awesome tutorials
+### Setup
 
-You can check out the [create-t3-app GitHub repository](https://github.com/t3-oss/create-t3-app) — your feedback and contributions are welcome!
+1. Clone the repository and install dependencies:
 
-## How do I deploy this?
+```bash
+npm install
+```
 
-Follow our deployment guides for [Vercel](https://create.t3.gg/en/deployment/vercel), [Netlify](https://create.t3.gg/en/deployment/netlify) and [Docker](https://create.t3.gg/en/deployment/docker) for more information.
+2. Copy environment variables:
+
+```bash
+cp .env.example .env
+```
+
+3. Configure `.env`:
+
+| Variable | Description |
+|----------|-------------|
+| `AUTH_SECRET` | NextAuth secret (`npx auth secret`) |
+| `DATABASE_URL` | Supabase transaction pooler URL (port 6543) |
+| `DIRECT_URL` | Supabase direct/session URL (port 5432) for migrations |
+| `AUTH_DISCORD_ID` | Optional Discord OAuth |
+| `AUTH_DISCORD_SECRET` | Optional Discord OAuth |
+
+4. Run migrations and seed:
+
+```bash
+npx prisma migrate dev
+npm run db:seed
+```
+
+5. Start the dev server:
+
+```bash
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000).
+
+### Seed Credentials
+
+| Role | Email | Password |
+|------|-------|----------|
+| Owner | `owner@articledesk.dev` | `password123` |
+| Reviewer | `reviewer@articledesk.dev` | `password123` |
+
+## Architecture
+
+### Authorization (ReBAC)
+
+Roles are scoped to resources, not global:
+
+| Action | Org OWNER | Org MEMBER | Project OWNER | Project REVIEWER |
+|--------|-----------|------------|---------------|------------------|
+| Create project | ✅ | ❌ | — | — |
+| Import articles | — | — | ✅ | ❌ |
+| View articles | — | — | ✅ | ✅ |
+| Submit review | — | — | ✅ | ✅ |
+| Delete article | — | — | ✅ | ❌ |
+
+tRPC middleware chain:
+
+```
+protectedProcedure → projectMemberProcedure → projectOwnerProcedure
+```
+
+### Domain Model
+
+```
+Organization → Project → Article → ArticleReview (per reviewer)
+```
+
+## Scripts
+
+| Script | Description |
+|--------|-------------|
+| `npm run dev` | Start development server |
+| `npm run build` | Production build |
+| `npm run db:seed` | Seed database |
+| `npm run db:studio` | Open Prisma Studio |
+| `npm test` | Run Vitest tests |
+
+## Navigation
+
+```
+Login → Organizations → Org Dashboard → Project View (Article Table + Import)
+```
+
+## Tests
+
+```bash
+npm test
+```
