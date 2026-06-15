@@ -4,6 +4,7 @@ import type { NextAuthConfig } from "next-auth";
  * Edge-compatible auth config for middleware (no Node.js dependencies).
  */
 export const edgeAuthConfig = {
+  trustHost: true,
   providers: [],
   session: { strategy: "jwt" as const },
   pages: {

@@ -5,7 +5,6 @@ import {
   type NextAuthConfig,
 } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import DiscordProvider from "next-auth/providers/discord";
 
 import { db } from "easySLR/server/db";
 import { env } from "easySLR/env";
@@ -47,16 +46,9 @@ const providers: NextAuthConfig["providers"] = [
   }),
 ];
 
-if (env.AUTH_DISCORD_ID && env.AUTH_DISCORD_SECRET) {
-  providers.push(
-    DiscordProvider({
-      clientId: env.AUTH_DISCORD_ID,
-      clientSecret: env.AUTH_DISCORD_SECRET,
-    }),
-  );
-}
 
 export const authConfig = {
+  trustHost: true,
   providers,
   adapter: PrismaAdapter(db),
   session: { strategy: "jwt" as const },

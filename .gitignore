@@ -39,8 +39,18 @@ yarn-error.log*
 # vercel
 .vercel
 
+# cursor
+.cursor
+
 # typescript
 *.tsbuildinfo
 
 # idea files
 .idea
+
+# sst
+.sst
+
+
+# open-next
+.open-next
