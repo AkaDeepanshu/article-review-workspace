@@ -1,8 +1,8 @@
-import { PrismaClient } from "../generated/prisma";
+import { createPrismaClient } from "../src/server/create-prisma-client";
 import bcrypt from "bcryptjs";
 import { computeDedupHash } from "../src/server/services/dedup";
 
-const db = new PrismaClient();
+const db = createPrismaClient();
 
 const SAMPLE_ARTICLES = [
   {
@@ -294,7 +294,6 @@ async function main() {
       data: {
         status: statuses[i]!,
         note: `Sample review note for article ${i + 1}`,
-        confidence: "MEDIUM",
       },
     });
   }

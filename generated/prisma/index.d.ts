@@ -3,7 +3,7 @@
  * Client
 **/
 
-import * as runtime from './runtime/library.js';
+import * as runtime from './runtime/client.js';
 import $Types = runtime.Types // general types
 import $Public = runtime.Types.Public
 import $Utils = runtime.Types.Utils
@@ -93,15 +93,6 @@ export const ReviewStatus: {
 
 export type ReviewStatus = (typeof ReviewStatus)[keyof typeof ReviewStatus]
 
-
-export const Confidence: {
-  HIGH: 'HIGH',
-  MEDIUM: 'MEDIUM',
-  LOW: 'LOW'
-};
-
-export type Confidence = (typeof Confidence)[keyof typeof Confidence]
-
 }
 
 export type OrgRole = $Enums.OrgRole
@@ -116,23 +107,21 @@ export type ReviewStatus = $Enums.ReviewStatus
 
 export const ReviewStatus: typeof $Enums.ReviewStatus
 
-export type Confidence = $Enums.Confidence
-
-export const Confidence: typeof $Enums.Confidence
-
 /**
  * ##  Prisma Client ʲˢ
  *
  * Type-safe database client for TypeScript & Node.js
  * @example
  * ```
- * const prisma = new PrismaClient()
+ * const prisma = new PrismaClient({
+ *   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL })
+ * })
  * // Fetch zero or more Users
  * const users = await prisma.user.findMany()
  * ```
  *
  *
- * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client).
+ * Read more in our [docs](https://pris.ly/d/client).
  */
 export class PrismaClient<
   ClientOptions extends Prisma.PrismaClientOptions = Prisma.PrismaClientOptions,
@@ -147,13 +136,15 @@ export class PrismaClient<
    * Type-safe database client for TypeScript & Node.js
    * @example
    * ```
-   * const prisma = new PrismaClient()
+   * const prisma = new PrismaClient({
+   *   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL })
+   * })
    * // Fetch zero or more Users
    * const users = await prisma.user.findMany()
    * ```
    *
    *
-   * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client).
+   * Read more in our [docs](https://pris.ly/d/client).
    */
 
   constructor(optionsArg ?: Prisma.Subset<ClientOptions, Prisma.PrismaClientOptions>);
@@ -176,7 +167,7 @@ export class PrismaClient<
    * const result = await prisma.$executeRaw`UPDATE User SET cool = ${true} WHERE email = ${'user@email.com'};`
    * ```
    *
-   * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client/raw-database-access).
+   * Read more in our [docs](https://pris.ly/d/raw-queries).
    */
   $executeRaw<T = unknown>(query: TemplateStringsArray | Prisma.Sql, ...values: any[]): Prisma.PrismaPromise<number>;
 
@@ -188,7 +179,7 @@ export class PrismaClient<
    * const result = await prisma.$executeRawUnsafe('UPDATE User SET cool = $1 WHERE email = $2 ;', true, 'user@email.com')
    * ```
    *
-   * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client/raw-database-access).
+   * Read more in our [docs](https://pris.ly/d/raw-queries).
    */
   $executeRawUnsafe<T = unknown>(query: string, ...values: any[]): Prisma.PrismaPromise<number>;
 
@@ -199,7 +190,7 @@ export class PrismaClient<
    * const result = await prisma.$queryRaw`SELECT * FROM User WHERE id = ${1} OR email = ${'user@email.com'};`
    * ```
    *
-   * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client/raw-database-access).
+   * Read more in our [docs](https://pris.ly/d/raw-queries).
    */
   $queryRaw<T = unknown>(query: TemplateStringsArray | Prisma.Sql, ...values: any[]): Prisma.PrismaPromise<T>;
 
@@ -211,7 +202,7 @@ export class PrismaClient<
    * const result = await prisma.$queryRawUnsafe('SELECT * FROM User WHERE id = $1 OR email = $2;', 1, 'user@email.com')
    * ```
    *
-   * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client/raw-database-access).
+   * Read more in our [docs](https://pris.ly/d/raw-queries).
    */
   $queryRawUnsafe<T = unknown>(query: string, ...values: any[]): Prisma.PrismaPromise<T>;
 
@@ -227,12 +218,11 @@ export class PrismaClient<
    * ])
    * ```
    * 
-   * Read more in our [docs](https://www.prisma.io/docs/concepts/components/prisma-client/transactions).
+   * Read more in our [docs](https://www.prisma.io/docs/orm/prisma-client/queries/transactions).
    */
-  $transaction<P extends Prisma.PrismaPromise<any>[]>(arg: [...P], options?: { isolationLevel?: Prisma.TransactionIsolationLevel }): $Utils.JsPromise<runtime.Types.Utils.UnwrapTuple<P>>
+  $transaction<P extends Prisma.PrismaPromise<any>[]>(arg: [...P], options?: { maxWait?: number, timeout?: number, isolationLevel?: Prisma.TransactionIsolationLevel }): $Utils.JsPromise<runtime.Types.Utils.UnwrapTuple<P>>
 
   $transaction<R>(fn: (prisma: Omit<PrismaClient, runtime.ITXClientDenyList>) => $Utils.JsPromise<R>, options?: { maxWait?: number, timeout?: number, isolationLevel?: Prisma.TransactionIsolationLevel }): $Utils.JsPromise<R>
-
 
   $extends: $Extensions.ExtendsHook<"extends", Prisma.TypeMapCb<ClientOptions>, ExtArgs, $Utils.Call<Prisma.TypeMapCb<ClientOptions>, {
     extArgs: ExtArgs
@@ -377,14 +367,6 @@ export namespace Prisma {
   export type DecimalJsLike = runtime.DecimalJsLike
 
   /**
-   * Metrics
-   */
-  export type Metrics = runtime.Metrics
-  export type Metric<T> = runtime.Metric<T>
-  export type MetricHistogram = runtime.MetricHistogram
-  export type MetricHistogramBucket = runtime.MetricHistogramBucket
-
-  /**
   * Extensions
   */
   export import Extension = $Extensions.UserArgs
@@ -395,11 +377,12 @@ export namespace Prisma {
   export import Exact = $Public.Exact
 
   /**
-   * Prisma Client JS version: 6.19.3
-   * Query Engine version: c2990dca591cba766e3b7ef5d9e8a84796e47ab7
+   * Prisma Client JS version: 7.8.0
+   * Query Engine version: 3c6e192761c0362d496ed980de936e2f3cebcd3a
    */
   export type PrismaVersion = {
     client: string
+    engine: string
   }
 
   export const prismaVersion: PrismaVersion
@@ -793,9 +776,6 @@ export namespace Prisma {
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
 
 
-  export type Datasources = {
-    db?: Datasource
-  }
 
   interface TypeMapCb<ClientOptions = {}> extends $Utils.Fn<{extArgs: $Extensions.InternalArgs }, $Utils.Record<string, any>> {
     returns: Prisma.TypeMap<this['params']['extArgs'], ClientOptions extends { omit: infer OmitOptions } ? OmitOptions : {}>
@@ -1579,14 +1559,6 @@ export namespace Prisma {
   export type ErrorFormat = 'pretty' | 'colorless' | 'minimal'
   export interface PrismaClientOptions {
     /**
-     * Overwrites the datasource url from your schema.prisma file
-     */
-    datasources?: Datasources
-    /**
-     * Overwrites the datasource url from your schema.prisma file
-     */
-    datasourceUrl?: string
-    /**
      * @default "colorless"
      */
     errorFormat?: ErrorFormat
@@ -1612,7 +1584,7 @@ export namespace Prisma {
      *  { emit: 'stdout', level: 'error' }
      * 
      * ```
-     * Read more in our [docs](https://www.prisma.io/docs/reference/tools-and-interfaces/prisma-client/logging#the-log-option).
+     * Read more in our [docs](https://pris.ly/d/logging).
      */
     log?: (LogLevel | LogDefinition)[]
     /**
@@ -1628,7 +1600,11 @@ export namespace Prisma {
     /**
      * Instance of a Driver Adapter, e.g., like one provided by `@prisma/adapter-planetscale`
      */
-    adapter?: runtime.SqlDriverAdapterFactory | null
+    adapter?: runtime.SqlDriverAdapterFactory
+    /**
+     * Prisma Accelerate URL allowing the client to connect through Accelerate instead of a direct database.
+     */
+    accelerateUrl?: string
     /**
      * Global configuration for omitting model fields by default.
      * 
@@ -1644,6 +1620,22 @@ export namespace Prisma {
      * ```
      */
     omit?: Prisma.GlobalOmitConfig
+    /**
+     * SQL commenter plugins that add metadata to SQL queries as comments.
+     * Comments follow the sqlcommenter format: https://google.github.io/sqlcommenter/
+     * 
+     * @example
+     * ```
+     * const prisma = new PrismaClient({
+     *   adapter,
+     *   comments: [
+     *     traceContext(),
+     *     queryInsights(),
+     *   ],
+     * })
+     * ```
+     */
+    comments?: runtime.SqlCommenterPlugin[]
   }
   export type GlobalOmitConfig = {
     user?: UserOmit
@@ -2804,6 +2796,11 @@ export namespace Prisma {
      * Skip the first `n` Users.
      */
     skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of Users.
+     */
     distinct?: UserScalarFieldEnum | UserScalarFieldEnum[]
   }
 
@@ -4116,6 +4113,11 @@ export namespace Prisma {
      * Skip the first `n` Accounts.
      */
     skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of Accounts.
+     */
     distinct?: AccountScalarFieldEnum | AccountScalarFieldEnum[]
   }
 
@@ -5161,6 +5163,11 @@ export namespace Prisma {
      * Skip the first `n` Sessions.
      */
     skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of Sessions.
+     */
     distinct?: SessionScalarFieldEnum | SessionScalarFieldEnum[]
   }
 
@@ -6158,6 +6165,11 @@ export namespace Prisma {
      * Skip the first `n` VerificationTokens.
      */
     skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of VerificationTokens.
+     */
     distinct?: VerificationTokenScalarFieldEnum | VerificationTokenScalarFieldEnum[]
   }
 
@@ -7175,6 +7187,11 @@ export namespace Prisma {
      * Skip the first `n` Organizations.
      */
     skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of Organizations.
+     */
     distinct?: OrganizationScalarFieldEnum | OrganizationScalarFieldEnum[]
   }
 
@@ -8281,6 +8298,11 @@ export namespace Prisma {
      * Skip the first `n` OrganizationMembers.
      */
     skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of OrganizationMembers.
+     */
     distinct?: OrganizationMemberScalarFieldEnum | OrganizationMemberScalarFieldEnum[]
   }
 
@@ -9349,6 +9371,11 @@ export namespace Prisma {
      * Skip the first `n` Projects.
      */
     skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of Projects.
+     */
     distinct?: ProjectScalarFieldEnum | ProjectScalarFieldEnum[]
   }
 
@@ -10463,6 +10490,11 @@ export namespace Prisma {
      * Skip the first `n` ProjectMembers.
      */
     skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ProjectMembers.
+     */
     distinct?: ProjectMemberScalarFieldEnum | ProjectMemberScalarFieldEnum[]
   }
 
@@ -11713,6 +11745,11 @@ export namespace Prisma {
      * Skip the first `n` Articles.
      */
     skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of Articles.
+     */
     distinct?: ArticleScalarFieldEnum | ArticleScalarFieldEnum[]
   }
 
@@ -11971,7 +12008,6 @@ export namespace Prisma {
     reviewerId: string | null
     status: $Enums.ReviewStatus | null
     note: string | null
-    confidence: $Enums.Confidence | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -11982,7 +12018,6 @@ export namespace Prisma {
     reviewerId: string | null
     status: $Enums.ReviewStatus | null
     note: string | null
-    confidence: $Enums.Confidence | null
     createdAt: Date | null
     updatedAt: Date | null
   }
@@ -11993,7 +12028,6 @@ export namespace Prisma {
     reviewerId: number
     status: number
     note: number
-    confidence: number
     createdAt: number
     updatedAt: number
     _all: number
@@ -12006,7 +12040,6 @@ export namespace Prisma {
     reviewerId?: true
     status?: true
     note?: true
-    confidence?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -12017,7 +12050,6 @@ export namespace Prisma {
     reviewerId?: true
     status?: true
     note?: true
-    confidence?: true
     createdAt?: true
     updatedAt?: true
   }
@@ -12028,7 +12060,6 @@ export namespace Prisma {
     reviewerId?: true
     status?: true
     note?: true
-    confidence?: true
     createdAt?: true
     updatedAt?: true
     _all?: true
@@ -12112,7 +12143,6 @@ export namespace Prisma {
     reviewerId: string
     status: $Enums.ReviewStatus
     note: string | null
-    confidence: $Enums.Confidence | null
     createdAt: Date
     updatedAt: Date
     _count: ArticleReviewCountAggregateOutputType | null
@@ -12140,7 +12170,6 @@ export namespace Prisma {
     reviewerId?: boolean
     status?: boolean
     note?: boolean
-    confidence?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     article?: boolean | ArticleDefaultArgs<ExtArgs>
@@ -12153,7 +12182,6 @@ export namespace Prisma {
     reviewerId?: boolean
     status?: boolean
     note?: boolean
-    confidence?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     article?: boolean | ArticleDefaultArgs<ExtArgs>
@@ -12166,7 +12194,6 @@ export namespace Prisma {
     reviewerId?: boolean
     status?: boolean
     note?: boolean
-    confidence?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     article?: boolean | ArticleDefaultArgs<ExtArgs>
@@ -12179,12 +12206,11 @@ export namespace Prisma {
     reviewerId?: boolean
     status?: boolean
     note?: boolean
-    confidence?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type ArticleReviewOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "articleId" | "reviewerId" | "status" | "note" | "confidence" | "createdAt" | "updatedAt", ExtArgs["result"]["articleReview"]>
+  export type ArticleReviewOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "articleId" | "reviewerId" | "status" | "note" | "createdAt" | "updatedAt", ExtArgs["result"]["articleReview"]>
   export type ArticleReviewInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     article?: boolean | ArticleDefaultArgs<ExtArgs>
     reviewer?: boolean | UserDefaultArgs<ExtArgs>
@@ -12210,7 +12236,6 @@ export namespace Prisma {
       reviewerId: string
       status: $Enums.ReviewStatus
       note: string | null
-      confidence: $Enums.Confidence | null
       createdAt: Date
       updatedAt: Date
     }, ExtArgs["result"]["articleReview"]>
@@ -12643,7 +12668,6 @@ export namespace Prisma {
     readonly reviewerId: FieldRef<"ArticleReview", 'String'>
     readonly status: FieldRef<"ArticleReview", 'ReviewStatus'>
     readonly note: FieldRef<"ArticleReview", 'String'>
-    readonly confidence: FieldRef<"ArticleReview", 'Confidence'>
     readonly createdAt: FieldRef<"ArticleReview", 'DateTime'>
     readonly updatedAt: FieldRef<"ArticleReview", 'DateTime'>
   }
@@ -12842,6 +12866,11 @@ export namespace Prisma {
      * Skip the first `n` ArticleReviews.
      */
     skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ArticleReviews.
+     */
     distinct?: ArticleReviewScalarFieldEnum | ArticleReviewScalarFieldEnum[]
   }
 
@@ -13198,7 +13227,6 @@ export namespace Prisma {
     reviewerId: 'reviewerId',
     status: 'status',
     note: 'note',
-    confidence: 'confidence',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
   };
@@ -13347,20 +13375,6 @@ export namespace Prisma {
    * Reference to a field of type 'ReviewStatus[]'
    */
   export type ListEnumReviewStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ReviewStatus[]'>
-    
-
-
-  /**
-   * Reference to a field of type 'Confidence'
-   */
-  export type EnumConfidenceFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Confidence'>
-    
-
-
-  /**
-   * Reference to a field of type 'Confidence[]'
-   */
-  export type ListEnumConfidenceFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Confidence[]'>
     
 
 
@@ -14016,7 +14030,6 @@ export namespace Prisma {
     reviewerId?: StringFilter<"ArticleReview"> | string
     status?: EnumReviewStatusFilter<"ArticleReview"> | $Enums.ReviewStatus
     note?: StringNullableFilter<"ArticleReview"> | string | null
-    confidence?: EnumConfidenceNullableFilter<"ArticleReview"> | $Enums.Confidence | null
     createdAt?: DateTimeFilter<"ArticleReview"> | Date | string
     updatedAt?: DateTimeFilter<"ArticleReview"> | Date | string
     article?: XOR<ArticleScalarRelationFilter, ArticleWhereInput>
@@ -14029,7 +14042,6 @@ export namespace Prisma {
     reviewerId?: SortOrder
     status?: SortOrder
     note?: SortOrderInput | SortOrder
-    confidence?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     article?: ArticleOrderByWithRelationInput
@@ -14046,7 +14058,6 @@ export namespace Prisma {
     reviewerId?: StringFilter<"ArticleReview"> | string
     status?: EnumReviewStatusFilter<"ArticleReview"> | $Enums.ReviewStatus
     note?: StringNullableFilter<"ArticleReview"> | string | null
-    confidence?: EnumConfidenceNullableFilter<"ArticleReview"> | $Enums.Confidence | null
     createdAt?: DateTimeFilter<"ArticleReview"> | Date | string
     updatedAt?: DateTimeFilter<"ArticleReview"> | Date | string
     article?: XOR<ArticleScalarRelationFilter, ArticleWhereInput>
@@ -14059,7 +14070,6 @@ export namespace Prisma {
     reviewerId?: SortOrder
     status?: SortOrder
     note?: SortOrderInput | SortOrder
-    confidence?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     _count?: ArticleReviewCountOrderByAggregateInput
@@ -14076,7 +14086,6 @@ export namespace Prisma {
     reviewerId?: StringWithAggregatesFilter<"ArticleReview"> | string
     status?: EnumReviewStatusWithAggregatesFilter<"ArticleReview"> | $Enums.ReviewStatus
     note?: StringNullableWithAggregatesFilter<"ArticleReview"> | string | null
-    confidence?: EnumConfidenceNullableWithAggregatesFilter<"ArticleReview"> | $Enums.Confidence | null
     createdAt?: DateTimeWithAggregatesFilter<"ArticleReview"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"ArticleReview"> | Date | string
   }
@@ -14754,7 +14763,6 @@ export namespace Prisma {
     id?: string
     status?: $Enums.ReviewStatus
     note?: string | null
-    confidence?: $Enums.Confidence | null
     createdAt?: Date | string
     updatedAt?: Date | string
     article: ArticleCreateNestedOneWithoutReviewsInput
@@ -14767,7 +14775,6 @@ export namespace Prisma {
     reviewerId: string
     status?: $Enums.ReviewStatus
     note?: string | null
-    confidence?: $Enums.Confidence | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -14776,7 +14783,6 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     status?: EnumReviewStatusFieldUpdateOperationsInput | $Enums.ReviewStatus
     note?: NullableStringFieldUpdateOperationsInput | string | null
-    confidence?: NullableEnumConfidenceFieldUpdateOperationsInput | $Enums.Confidence | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     article?: ArticleUpdateOneRequiredWithoutReviewsNestedInput
@@ -14789,7 +14795,6 @@ export namespace Prisma {
     reviewerId?: StringFieldUpdateOperationsInput | string
     status?: EnumReviewStatusFieldUpdateOperationsInput | $Enums.ReviewStatus
     note?: NullableStringFieldUpdateOperationsInput | string | null
-    confidence?: NullableEnumConfidenceFieldUpdateOperationsInput | $Enums.Confidence | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -14800,7 +14805,6 @@ export namespace Prisma {
     reviewerId: string
     status?: $Enums.ReviewStatus
     note?: string | null
-    confidence?: $Enums.Confidence | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -14809,7 +14813,6 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     status?: EnumReviewStatusFieldUpdateOperationsInput | $Enums.ReviewStatus
     note?: NullableStringFieldUpdateOperationsInput | string | null
-    confidence?: NullableEnumConfidenceFieldUpdateOperationsInput | $Enums.Confidence | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -14820,7 +14823,6 @@ export namespace Prisma {
     reviewerId?: StringFieldUpdateOperationsInput | string
     status?: EnumReviewStatusFieldUpdateOperationsInput | $Enums.ReviewStatus
     note?: NullableStringFieldUpdateOperationsInput | string | null
-    confidence?: NullableEnumConfidenceFieldUpdateOperationsInput | $Enums.Confidence | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -15462,13 +15464,6 @@ export namespace Prisma {
     not?: NestedEnumReviewStatusFilter<$PrismaModel> | $Enums.ReviewStatus
   }
 
-  export type EnumConfidenceNullableFilter<$PrismaModel = never> = {
-    equals?: $Enums.Confidence | EnumConfidenceFieldRefInput<$PrismaModel> | null
-    in?: $Enums.Confidence[] | ListEnumConfidenceFieldRefInput<$PrismaModel> | null
-    notIn?: $Enums.Confidence[] | ListEnumConfidenceFieldRefInput<$PrismaModel> | null
-    not?: NestedEnumConfidenceNullableFilter<$PrismaModel> | $Enums.Confidence | null
-  }
-
   export type ArticleScalarRelationFilter = {
     is?: ArticleWhereInput
     isNot?: ArticleWhereInput
@@ -15485,7 +15480,6 @@ export namespace Prisma {
     reviewerId?: SortOrder
     status?: SortOrder
     note?: SortOrder
-    confidence?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -15496,7 +15490,6 @@ export namespace Prisma {
     reviewerId?: SortOrder
     status?: SortOrder
     note?: SortOrder
-    confidence?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -15507,7 +15500,6 @@ export namespace Prisma {
     reviewerId?: SortOrder
     status?: SortOrder
     note?: SortOrder
-    confidence?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
   }
@@ -15520,16 +15512,6 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumReviewStatusFilter<$PrismaModel>
     _max?: NestedEnumReviewStatusFilter<$PrismaModel>
-  }
-
-  export type EnumConfidenceNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.Confidence | EnumConfidenceFieldRefInput<$PrismaModel> | null
-    in?: $Enums.Confidence[] | ListEnumConfidenceFieldRefInput<$PrismaModel> | null
-    notIn?: $Enums.Confidence[] | ListEnumConfidenceFieldRefInput<$PrismaModel> | null
-    not?: NestedEnumConfidenceNullableWithAggregatesFilter<$PrismaModel> | $Enums.Confidence | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedEnumConfidenceNullableFilter<$PrismaModel>
-    _max?: NestedEnumConfidenceNullableFilter<$PrismaModel>
   }
 
   export type AccountCreateNestedManyWithoutUserInput = {
@@ -16112,10 +16094,6 @@ export namespace Prisma {
     set?: $Enums.ReviewStatus
   }
 
-  export type NullableEnumConfidenceFieldUpdateOperationsInput = {
-    set?: $Enums.Confidence | null
-  }
-
   export type ArticleUpdateOneRequiredWithoutReviewsNestedInput = {
     create?: XOR<ArticleCreateWithoutReviewsInput, ArticleUncheckedCreateWithoutReviewsInput>
     connectOrCreate?: ArticleCreateOrConnectWithoutReviewsInput
@@ -16357,13 +16335,6 @@ export namespace Prisma {
     not?: NestedEnumReviewStatusFilter<$PrismaModel> | $Enums.ReviewStatus
   }
 
-  export type NestedEnumConfidenceNullableFilter<$PrismaModel = never> = {
-    equals?: $Enums.Confidence | EnumConfidenceFieldRefInput<$PrismaModel> | null
-    in?: $Enums.Confidence[] | ListEnumConfidenceFieldRefInput<$PrismaModel> | null
-    notIn?: $Enums.Confidence[] | ListEnumConfidenceFieldRefInput<$PrismaModel> | null
-    not?: NestedEnumConfidenceNullableFilter<$PrismaModel> | $Enums.Confidence | null
-  }
-
   export type NestedEnumReviewStatusWithAggregatesFilter<$PrismaModel = never> = {
     equals?: $Enums.ReviewStatus | EnumReviewStatusFieldRefInput<$PrismaModel>
     in?: $Enums.ReviewStatus[] | ListEnumReviewStatusFieldRefInput<$PrismaModel>
@@ -16372,16 +16343,6 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedEnumReviewStatusFilter<$PrismaModel>
     _max?: NestedEnumReviewStatusFilter<$PrismaModel>
-  }
-
-  export type NestedEnumConfidenceNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: $Enums.Confidence | EnumConfidenceFieldRefInput<$PrismaModel> | null
-    in?: $Enums.Confidence[] | ListEnumConfidenceFieldRefInput<$PrismaModel> | null
-    notIn?: $Enums.Confidence[] | ListEnumConfidenceFieldRefInput<$PrismaModel> | null
-    not?: NestedEnumConfidenceNullableWithAggregatesFilter<$PrismaModel> | $Enums.Confidence | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _min?: NestedEnumConfidenceNullableFilter<$PrismaModel>
-    _max?: NestedEnumConfidenceNullableFilter<$PrismaModel>
   }
 
   export type AccountCreateWithoutUserInput = {
@@ -16498,7 +16459,6 @@ export namespace Prisma {
     id?: string
     status?: $Enums.ReviewStatus
     note?: string | null
-    confidence?: $Enums.Confidence | null
     createdAt?: Date | string
     updatedAt?: Date | string
     article: ArticleCreateNestedOneWithoutReviewsInput
@@ -16509,7 +16469,6 @@ export namespace Prisma {
     articleId: string
     status?: $Enums.ReviewStatus
     note?: string | null
-    confidence?: $Enums.Confidence | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -16664,7 +16623,6 @@ export namespace Prisma {
     reviewerId?: StringFilter<"ArticleReview"> | string
     status?: EnumReviewStatusFilter<"ArticleReview"> | $Enums.ReviewStatus
     note?: StringNullableFilter<"ArticleReview"> | string | null
-    confidence?: EnumConfidenceNullableFilter<"ArticleReview"> | $Enums.Confidence | null
     createdAt?: DateTimeFilter<"ArticleReview"> | Date | string
     updatedAt?: DateTimeFilter<"ArticleReview"> | Date | string
   }
@@ -17372,7 +17330,6 @@ export namespace Prisma {
     id?: string
     status?: $Enums.ReviewStatus
     note?: string | null
-    confidence?: $Enums.Confidence | null
     createdAt?: Date | string
     updatedAt?: Date | string
     reviewer: UserCreateNestedOneWithoutArticleReviewsInput
@@ -17383,7 +17340,6 @@ export namespace Prisma {
     reviewerId: string
     status?: $Enums.ReviewStatus
     note?: string | null
-    confidence?: $Enums.Confidence | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -17655,7 +17611,6 @@ export namespace Prisma {
     articleId: string
     status?: $Enums.ReviewStatus
     note?: string | null
-    confidence?: $Enums.Confidence | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -17769,7 +17724,6 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     status?: EnumReviewStatusFieldUpdateOperationsInput | $Enums.ReviewStatus
     note?: NullableStringFieldUpdateOperationsInput | string | null
-    confidence?: NullableEnumConfidenceFieldUpdateOperationsInput | $Enums.Confidence | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     article?: ArticleUpdateOneRequiredWithoutReviewsNestedInput
@@ -17780,7 +17734,6 @@ export namespace Prisma {
     articleId?: StringFieldUpdateOperationsInput | string
     status?: EnumReviewStatusFieldUpdateOperationsInput | $Enums.ReviewStatus
     note?: NullableStringFieldUpdateOperationsInput | string | null
-    confidence?: NullableEnumConfidenceFieldUpdateOperationsInput | $Enums.Confidence | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -17790,7 +17743,6 @@ export namespace Prisma {
     articleId?: StringFieldUpdateOperationsInput | string
     status?: EnumReviewStatusFieldUpdateOperationsInput | $Enums.ReviewStatus
     note?: NullableStringFieldUpdateOperationsInput | string | null
-    confidence?: NullableEnumConfidenceFieldUpdateOperationsInput | $Enums.Confidence | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -17966,7 +17918,6 @@ export namespace Prisma {
     reviewerId: string
     status?: $Enums.ReviewStatus
     note?: string | null
-    confidence?: $Enums.Confidence | null
     createdAt?: Date | string
     updatedAt?: Date | string
   }
@@ -17975,7 +17926,6 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     status?: EnumReviewStatusFieldUpdateOperationsInput | $Enums.ReviewStatus
     note?: NullableStringFieldUpdateOperationsInput | string | null
-    confidence?: NullableEnumConfidenceFieldUpdateOperationsInput | $Enums.Confidence | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     reviewer?: UserUpdateOneRequiredWithoutArticleReviewsNestedInput
@@ -17986,7 +17936,6 @@ export namespace Prisma {
     reviewerId?: StringFieldUpdateOperationsInput | string
     status?: EnumReviewStatusFieldUpdateOperationsInput | $Enums.ReviewStatus
     note?: NullableStringFieldUpdateOperationsInput | string | null
-    confidence?: NullableEnumConfidenceFieldUpdateOperationsInput | $Enums.Confidence | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -17996,7 +17945,6 @@ export namespace Prisma {
     reviewerId?: StringFieldUpdateOperationsInput | string
     status?: EnumReviewStatusFieldUpdateOperationsInput | $Enums.ReviewStatus
     note?: NullableStringFieldUpdateOperationsInput | string | null
-    confidence?: NullableEnumConfidenceFieldUpdateOperationsInput | $Enums.Confidence | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }

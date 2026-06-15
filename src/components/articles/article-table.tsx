@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   flexRender,
   getCoreRowModel,
@@ -9,15 +9,25 @@ import {
   type RowSelectionState,
 } from "@tanstack/react-table";
 import type { ReviewStatus } from "../../../generated/prisma";
-import { FileText, Trash2 } from "lucide-react";
+import { FileText } from "lucide-react";
 
-import { ReviewStatusSelect } from "easySLR/components/articles/review-status-select";
 import { ArticleTableToolbar } from "easySLR/components/articles/article-table-toolbar";
 import { BulkActions } from "easySLR/components/articles/bulk-actions";
+import { DeleteArticleDialog } from "easySLR/components/articles/delete-article-dialog";
+import { NoteCell } from "easySLR/components/articles/note-cell";
+import { ReviewStatusSelect } from "easySLR/components/articles/review-status-select";
+import { useProjectActions } from "easySLR/components/layout/project-actions-context";
 import { EmptyState, ErrorState } from "easySLR/components/ui/empty-state";
 import { TableSkeleton } from "easySLR/components/ui/page-skeletons";
 import { Button } from "easySLR/components/ui/button";
 import { Checkbox } from "easySLR/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "easySLR/components/ui/select";
 import {
   Table,
   TableBody,
@@ -51,13 +61,14 @@ export function ArticleTable({
   const [status, setStatus] = useState<ReviewStatus | "ALL">("ALL");
   const [sortBy, setSortBy] = useState<"year" | "title" | "status">("title");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [pageSize, setPageSize] = useState(25);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [cursorStack, setCursorStack] = useState<string[]>([]);
   const [currentCursor, setCurrentCursor] = useState<string | undefined>(
     undefined,
   );
 
-  const utils = api.useUtils();
+  const projectActions = useProjectActions();
   const selectedIds = Object.keys(rowSelection).filter((k) => rowSelection[k]);
 
   const queryInput = {
@@ -66,7 +77,7 @@ export function ArticleTable({
     status: status === "ALL" ? undefined : status,
     sortBy,
     sortDir,
-    limit: 25,
+    limit: pageSize,
     cursor: currentCursor,
   };
 
@@ -74,13 +85,20 @@ export function ArticleTable({
     queryInput,
   );
 
-  const deleteArticle = api.article.delete.useMutation({
-    onSuccess: () => void utils.article.list.invalidate(),
-  });
+  useEffect(() => {
+    projectActions?.setActiveFilters({
+      search: search || undefined,
+      status: status === "ALL" ? undefined : status,
+      sortBy,
+      sortDir,
+    });
+  }, [search, status, sortBy, sortDir, projectActions?.setActiveFilters]);
 
   function handleSearchChange(value: string) {
+    if (value !== search) {
+      resetPagination(setCurrentCursor, setCursorStack);
+    }
     setSearch(value);
-    resetPagination(setCurrentCursor, setCursorStack);
   }
 
   function handleStatusChange(value: ReviewStatus | "ALL") {
@@ -167,9 +185,12 @@ export function ArticleTable({
         id: "note",
         header: "Note",
         cell: ({ row }) => (
-          <span className="block max-w-[120px] truncate text-xs text-muted-foreground">
-            {row.original.review.note ?? "—"}
-          </span>
+          <NoteCell
+            projectId={projectId}
+            articleId={row.original.id}
+            currentStatus={row.original.review.status}
+            currentNote={row.original.review.note}
+          />
         ),
       },
       {
@@ -177,24 +198,15 @@ export function ArticleTable({
         header: () => <span className="w-[80px]" />,
         cell: ({ row }) =>
           isOwner ? (
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              onClick={() => {
-                if (confirm("Delete this article?")) {
-                  deleteArticle.mutate({
-                    projectId,
-                    articleId: row.original.id,
-                  });
-                }
-              }}
-            >
-              <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
-            </Button>
+            <DeleteArticleDialog
+              projectId={projectId}
+              articleId={row.original.id}
+              articleTitle={row.original.title}
+            />
           ) : null,
       },
     ],
-    [projectId, isOwner, deleteArticle],
+    [projectId, isOwner],
   );
 
   const table = useReactTable({
@@ -294,11 +306,11 @@ export function ArticleTable({
             </Table>
           </div>
 
-          {showPagination && (
-            <div className="flex items-center justify-between px-1">
-              <p className="text-sm text-muted-foreground">
-                Page {cursorStack.length + 1}
-              </p>
+          <div className="flex items-center justify-between px-1">
+            <p className="text-sm text-muted-foreground">
+              Page {cursorStack.length + 1}
+            </p>
+            <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
@@ -330,8 +342,30 @@ export function ArticleTable({
                   Next →
                 </Button>
               </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  Rows per page
+                </span>
+                <Select
+                  value={String(pageSize)}
+                  onValueChange={(v) => {
+                    setPageSize(Number(v));
+                    resetPagination(setCurrentCursor, setCursorStack);
+                  }}
+                >
+                  <SelectTrigger className="h-8 w-[70px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10</SelectItem>
+                    <SelectItem value="25">25</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-          )}
+          </div>
         </>
       )}
     </div>

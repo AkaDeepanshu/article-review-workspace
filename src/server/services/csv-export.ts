@@ -24,7 +24,6 @@ export function articlesToCsv(articles: ArticleWithReview[]): string {
     "DOI",
     "Status",
     "Note",
-    "Confidence",
   ];
 
   const rows = articles.map((article) => {
@@ -39,7 +38,6 @@ export function articlesToCsv(articles: ArticleWithReview[]): string {
       escapeCsv(article.doi),
       escapeCsv(review?.status ?? "PENDING"),
       escapeCsv(review?.note),
-      escapeCsv(review?.confidence),
     ].join(",");
   });
 

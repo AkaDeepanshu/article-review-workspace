@@ -14,7 +14,6 @@ export const reviewRouter = createTRPCRouter({
         articleId: z.string(),
         status: z.enum(["PENDING", "INCLUDED", "EXCLUDED", "MAYBE"]),
         note: z.string().max(5000).optional().nullable(),
-        confidence: z.enum(["HIGH", "MEDIUM", "LOW"]).optional().nullable(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -38,12 +37,10 @@ export const reviewRouter = createTRPCRouter({
           reviewerId: ctx.session.user.id,
           status: input.status,
           note: input.note ?? null,
-          confidence: input.confidence ?? null,
         },
         update: {
           status: input.status,
           note: input.note ?? null,
-          confidence: input.confidence ?? null,
         },
       });
     }),

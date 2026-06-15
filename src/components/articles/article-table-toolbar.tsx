@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ReviewStatus } from "../../../generated/prisma";
 import { Search } from "lucide-react";
 
@@ -12,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "easySLR/components/ui/select";
+import { toTitleCase } from "easySLR/lib/utils";
 
 export function ArticleTableToolbar({
   search,
@@ -33,11 +34,17 @@ export function ArticleTableToolbar({
   onSortDirChange: (value: "asc" | "desc") => void;
 }) {
   const [localSearch, setLocalSearch] = useState(search);
+  const onSearchChangeRef = useRef(onSearchChange);
+  onSearchChangeRef.current = onSearchChange;
 
   useEffect(() => {
-    const timer = setTimeout(() => onSearchChange(localSearch), 300);
+    setLocalSearch(search);
+  }, [search]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => onSearchChangeRef.current(localSearch), 300);
     return () => clearTimeout(timer);
-  }, [localSearch, onSearchChange]);
+  }, [localSearch]);
 
   return (
     <div className="flex flex-wrap items-center gap-3">
@@ -51,7 +58,7 @@ export function ArticleTableToolbar({
         />
       </div>
       <Select
-        value={status}
+        value={toTitleCase(status)}
         onValueChange={(v) => {
           if (
             v === "ALL" ||
@@ -68,7 +75,7 @@ export function ArticleTableToolbar({
           <SelectValue placeholder="Status" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="ALL">All statuses</SelectItem>
+          <SelectItem value="ALL">All Statuses</SelectItem>
           <SelectItem value="PENDING">Pending</SelectItem>
           <SelectItem value="INCLUDED">Included</SelectItem>
           <SelectItem value="EXCLUDED">Excluded</SelectItem>
@@ -76,7 +83,7 @@ export function ArticleTableToolbar({
         </SelectContent>
       </Select>
       <Select
-        value={sortBy}
+        value={toTitleCase(sortBy)}
         onValueChange={(v) => {
           if (v === "year" || v === "title" || v === "status") onSortByChange(v);
         }}
@@ -91,7 +98,7 @@ export function ArticleTableToolbar({
         </SelectContent>
       </Select>
       <Select
-        value={sortDir}
+        value={toTitleCase(sortDir)}
         onValueChange={(v) => {
           if (v === "asc" || v === "desc") onSortDirChange(v);
         }}

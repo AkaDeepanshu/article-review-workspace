@@ -14,27 +14,32 @@ import { cn } from "easySLR/lib/utils";
 type PreviewResult = RouterOutputs["import"]["parsePreview"];
 type Row = PreviewResult["valid"][number];
 
-function borderColor(row: Row, category: "valid" | "warnings" | "errors" | "duplicates") {
-  if (category === "valid") return "border-l-green-500";
+function borderColor(category: "warnings" | "errors" | "duplicates") {
   if (category === "warnings") return "border-l-amber-500";
-  if (category === "errors" || category === "duplicates") return "border-l-red-500";
-  return "";
+  return "border-l-red-500";
 }
 
 function RowTable({
   rows,
   category,
   title,
+  note,
 }: {
   rows: Row[];
-  category: "valid" | "warnings" | "errors" | "duplicates";
+  category: "warnings" | "errors" | "duplicates";
   title: string;
+  note: string;
 }) {
   if (rows.length === 0) return null;
 
   return (
     <div>
-      <h4 className="mb-2 text-sm font-medium">{title} ({rows.length})</h4>
+      <div className="mb-2 flex items-baseline justify-between gap-2">
+        <h4 className="text-sm font-medium">
+          {title} ({rows.length})
+        </h4>
+        <span className="text-xs text-muted-foreground">{note}</span>
+      </div>
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -49,7 +54,7 @@ function RowTable({
             {rows.map((row) => (
               <TableRow
                 key={row.rowNumber}
-                className={cn("border-l-4", borderColor(row, category))}
+                className={cn("border-l-4", borderColor(category))}
               >
                 <TableCell>{row.rowNumber}</TableCell>
                 <TableCell className="max-w-[200px] truncate">
@@ -69,12 +74,45 @@ function RowTable({
 }
 
 export function PreviewTable({ preview }: { preview: PreviewResult }) {
+  const validCount = preview.valid.length;
+  const warningCount = preview.warnings.length;
+  const errorCount = preview.errors.length;
+  const duplicateCount = preview.duplicates.length;
+
   return (
     <div className="max-h-96 space-y-4 overflow-y-auto">
-      <RowTable rows={preview.valid} category="valid" title="Valid" />
-      <RowTable rows={preview.warnings} category="warnings" title="Warnings" />
-      <RowTable rows={preview.errors} category="errors" title="Errors" />
-      <RowTable rows={preview.duplicates} category="duplicates" title="Duplicates" />
+      <div>
+        <h3 className="text-sm font-semibold">Import Preview</h3>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {validCount} valid · {warningCount} warnings · {errorCount} errors ·{" "}
+          {duplicateCount} duplicates
+        </p>
+      </div>
+
+      <RowTable
+        rows={preview.warnings}
+        category="warnings"
+        title="⚠️ Rows with warnings"
+        note="will be imported"
+      />
+      <RowTable
+        rows={preview.errors}
+        category="errors"
+        title="❌ Rows with errors"
+        note="will be skipped"
+      />
+      <RowTable
+        rows={preview.duplicates}
+        category="duplicates"
+        title="🔁 Duplicate rows"
+        note="will be skipped"
+      />
+
+      {warningCount === 0 && errorCount === 0 && duplicateCount === 0 && (
+        <p className="text-sm text-muted-foreground">
+          All {validCount} rows look good — no issues to review.
+        </p>
+      )}
     </div>
   );
 }

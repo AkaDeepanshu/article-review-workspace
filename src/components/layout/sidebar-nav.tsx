@@ -113,8 +113,8 @@ export function SidebarContent({
             ArticleDesk
           </Link>
           <p className="text-xs text-muted-foreground">
-            Systematic literature review, simplified.
-          </p>
+            Article Review Workspace.
+      </p>
         </div>
       </div>
 

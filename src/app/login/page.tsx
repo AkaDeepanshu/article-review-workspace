@@ -22,7 +22,7 @@ export default async function LoginPage() {
         <CardHeader className="text-center">
           <CardTitle className="text-2xl">ArticleDesk</CardTitle>
           <CardDescription>
-            Systematic literature review, simplified.
+            Article Review Workspace.
           </CardDescription>
         </CardHeader>
         <CardContent>

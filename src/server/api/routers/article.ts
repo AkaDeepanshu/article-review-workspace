@@ -15,7 +15,7 @@ const listInput = z.object({
   status: z.enum(["PENDING", "INCLUDED", "EXCLUDED", "MAYBE"]).optional(),
   sortBy: z.enum(["year", "title", "status"]).default("title"),
   sortDir: z.enum(["asc", "desc"]).default("asc"),
-  limit: z.number().min(1).max(100).default(50),
+  limit: z.number().min(1).max(100).default(25),
   cursor: z.string().optional(),
 });
 
@@ -49,7 +49,7 @@ export const articleRouter = createTRPCRouter({
     } else if (input.sortBy === "title") {
       orderBy = { title: input.sortDir };
     } else {
-      orderBy = { title: "asc" };
+      orderBy = { createdAt: "asc" };
     }
 
     const articles = await ctx.db.article.findMany({
@@ -101,7 +101,6 @@ export const articleRouter = createTRPCRouter({
         review: article.reviews[0] ?? {
           status: "PENDING" as const,
           note: null,
-          confidence: null,
         },
       })),
       nextCursor,
@@ -144,17 +143,56 @@ export const articleRouter = createTRPCRouter({
     }),
 
   exportCsv: projectMemberProcedure
-    .input(z.object({ projectId: z.string() }))
+    .input(
+      z.object({
+        projectId: z.string(),
+        search: z.string().optional(),
+        status: z.enum(["PENDING", "INCLUDED", "EXCLUDED", "MAYBE"]).optional(),
+        sortBy: z.enum(["year", "title", "status"]).default("title"),
+        sortDir: z.enum(["asc", "desc"]).default("asc"),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
+      const reviewerId = ctx.session.user.id;
+
+      const where: Prisma.ArticleWhereInput = {
+        projectId: input.projectId,
+      };
+
+      if (input.search) {
+        where.OR = [
+          { title: { contains: input.search, mode: "insensitive" } },
+          { authors: { contains: input.search, mode: "insensitive" } },
+        ];
+      }
+
+      if (input.status) {
+        where.reviews = {
+          some: {
+            reviewerId,
+            status: input.status,
+          },
+        };
+      }
+
+      let orderBy: Prisma.ArticleOrderByWithRelationInput;
+      if (input.sortBy === "year") {
+        orderBy = { year: input.sortDir };
+      } else if (input.sortBy === "title") {
+        orderBy = { title: input.sortDir };
+      } else {
+        orderBy = { createdAt: "asc" };
+      }
+
       const articles = await ctx.db.article.findMany({
-        where: { projectId: input.projectId },
+        where,
         include: {
           reviews: {
-            where: { reviewerId: ctx.session.user.id },
+            where: { reviewerId },
             take: 1,
           },
         },
-        orderBy: { title: "asc" },
+        orderBy,
       });
 
       return {

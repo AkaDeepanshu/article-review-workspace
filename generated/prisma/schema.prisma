@@ -4,9 +4,7 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
 }
 
 enum OrgRole {
@@ -24,12 +22,6 @@ enum ReviewStatus {
   INCLUDED
   EXCLUDED
   MAYBE
-}
-
-enum Confidence {
-  HIGH
-  MEDIUM
-  LOW
 }
 
 model User {
@@ -170,7 +162,6 @@ model ArticleReview {
   reviewerId String
   status     ReviewStatus @default(PENDING)
   note       String?
-  confidence Confidence?
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt
 

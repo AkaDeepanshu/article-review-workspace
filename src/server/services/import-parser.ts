@@ -58,6 +58,11 @@ function parseYear(value: unknown): number | null {
   return Number.isNaN(year) ? null : year;
 }
 
+function normalizeDoi(value: string | null): string | null {
+  if (!value) return null;
+  return value.replace(/^doi:\s*/i, "").trim() || null;
+}
+
 function normalizeHeader(header: string): string {
   return header.trim().toLowerCase().replace(/\s+/g, " ");
 }
@@ -83,7 +88,11 @@ function validateRow(
   const errors: string[] = [];
 
   if (!row.title && !row.pmid) {
-    errors.push("Missing both Title and PMID");
+    errors.push("Missing both Title and PMID — cannot identify article");
+  } else if (!row.title) {
+    warnings.push("Missing Title");
+  } else if (!row.pmid) {
+    warnings.push("Missing PMID");
   }
 
   if (!row.doi) {
@@ -91,11 +100,15 @@ function validateRow(
   }
 
   if (!row.year) {
-    warnings.push("Missing Publication Year");
+    warnings.push("Missing or invalid Publication Year");
+  } else if (row.year > new Date().getFullYear() + 1) {
+    warnings.push(`Publication Year ${row.year} is in the future`);
   }
 
-  if (row.authors && !row.authors.includes(",")) {
-    warnings.push("Authors may be malformed (no comma separator)");
+  if (!row.authors) {
+    warnings.push("Missing Authors");
+  } else if (!row.authors.includes(";") && !row.authors.includes(",")) {
+    warnings.push("Authors field may be malformed (expected ; or , separator)");
   }
 
   return { warnings, errors };
@@ -137,6 +150,8 @@ export function parseRowFromCells(
     const value = cells[colIndex];
     if (field === "year") {
       raw.year = parseYear(value);
+    } else if (field === "doi") {
+      raw.doi = normalizeDoi(cellToString(value));
     } else {
       raw[field] = cellToString(value);
     }

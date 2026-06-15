@@ -16,11 +16,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "easySLR/components/ui/dialog";
+import { Label } from "easySLR/components/ui/label";
 import { Progress } from "easySLR/components/ui/progress";
 import { api, type RouterOutputs } from "easySLR/trpc/react";
 
 type PreviewResult = RouterOutputs["import"]["parsePreview"];
 type Step = "upload" | "preview" | "summary";
+type ImportMode = "valid_only" | "valid_and_warnings";
 
 export function ImportDialog({
   projectId,
@@ -33,6 +35,7 @@ export function ImportDialog({
 }) {
   const [step, setStep] = useState<Step>("upload");
   const [preview, setPreview] = useState<PreviewResult | null>(null);
+  const [importMode, setImportMode] = useState<ImportMode>("valid_and_warnings");
   const [summary, setSummary] = useState<{
     imported: number;
     skippedDuplicates: number;
@@ -44,6 +47,7 @@ export function ImportDialog({
   const parsePreview = api.import.parsePreview.useMutation({
     onSuccess: (data) => {
       setPreview(data);
+      setImportMode("valid_and_warnings");
       setStep("preview");
     },
     onError: (err) => toast.error(err.message),
@@ -63,12 +67,11 @@ export function ImportDialog({
     onError: (err) => toast.error(err.message),
   });
 
-  const importableRows = preview ? [...preview.valid, ...preview.warnings] : [];
-
   function handleClose() {
     setStep("upload");
     setPreview(null);
     setSummary(null);
+    setImportMode("valid_and_warnings");
     onClose();
   }
 
@@ -107,27 +110,52 @@ export function ImportDialog({
         {step === "summary" && summary && <ImportSummary {...summary} />}
 
         <DialogFooter>
-          {step === "preview" && (
-            <>
-              <Button variant="outline" onClick={() => setStep("upload")}>
-                Back
-              </Button>
-              <Button
-                onClick={() =>
-                  confirmImport.mutate({
-                    projectId,
-                    rows: importableRows,
-                  })
-                }
-                disabled={
-                  confirmImport.isPending || importableRows.length === 0
-                }
-              >
-                {confirmImport.isPending
-                  ? "Importing…"
-                  : `Confirm import (${importableRows.length})`}
-              </Button>
-            </>
+          {step === "preview" && preview && (
+            <div className="flex w-full flex-col gap-3">
+              <div className="flex flex-col gap-1">
+                <Label className="text-sm font-medium">Import options</Label>
+                <div className="flex flex-col gap-1.5">
+                  <label className="flex cursor-pointer items-center gap-2 text-sm">
+                    <input
+                      type="radio"
+                      value="valid_and_warnings"
+                      checked={importMode === "valid_and_warnings"}
+                      onChange={() => setImportMode("valid_and_warnings")}
+                    />
+                    Import valid + warnings (
+                    {preview.valid.length + preview.warnings.length} rows)
+                  </label>
+                  <label className="flex cursor-pointer items-center gap-2 text-sm">
+                    <input
+                      type="radio"
+                      value="valid_only"
+                      checked={importMode === "valid_only"}
+                      onChange={() => setImportMode("valid_only")}
+                    />
+                    Import valid only ({preview.valid.length} rows, skip warnings)
+                  </label>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setStep("upload")}>
+                  Back
+                </Button>
+                <Button
+                  onClick={() => {
+                    const rows =
+                      importMode === "valid_only"
+                        ? preview.valid
+                        : [...preview.valid, ...preview.warnings];
+                    confirmImport.mutate({ projectId, rows });
+                  }}
+                  disabled={
+                    confirmImport.isPending || preview.valid.length === 0
+                  }
+                >
+                  {confirmImport.isPending ? "Importing…" : "Confirm import"}
+                </Button>
+              </div>
+            </div>
           )}
           {step === "summary" && <Button onClick={handleClose}>Done</Button>}
         </DialogFooter>

@@ -1,11 +1,14 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { ImportDialog } from "easySLR/components/import/import-dialog";
-import { ProjectActionsProvider } from "easySLR/components/layout/project-actions-context";
+import {
+  ProjectActionsProvider,
+  type ActiveFilters,
+} from "easySLR/components/layout/project-actions-context";
 import { api } from "easySLR/trpc/react";
 
 function parseProjectId(pathname: string) {
@@ -16,6 +19,10 @@ export function ProjectActionsShell({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const projectId = parseProjectId(pathname);
   const [importOpen, setImportOpen] = useState(false);
+  const activeFiltersRef = useRef<ActiveFilters>({
+    sortBy: "title",
+    sortDir: "asc",
+  });
 
   const { data: project } = api.project.get.useQuery(
     { projectId: projectId! },
@@ -39,9 +46,15 @@ export function ProjectActionsShell({ children }: { children: React.ReactNode })
   });
 
   const openImport = useCallback(() => setImportOpen(true), []);
+  const setActiveFilters = useCallback((filters: ActiveFilters) => {
+    activeFiltersRef.current = filters;
+  }, []);
   const exportCsv = useCallback(() => {
     if (projectId) {
-      exportCsvMutation.mutate({ projectId });
+      exportCsvMutation.mutate({
+        projectId,
+        ...activeFiltersRef.current,
+      });
     }
   }, [exportCsvMutation, projectId]);
 
@@ -51,8 +64,15 @@ export function ProjectActionsShell({ children }: { children: React.ReactNode })
       exportCsv,
       isOwner: project?.currentUserRole === "OWNER",
       isExporting: exportCsvMutation.isPending,
+      setActiveFilters,
     }),
-    [openImport, exportCsv, project?.currentUserRole, exportCsvMutation.isPending],
+    [
+      openImport,
+      exportCsv,
+      project?.currentUserRole,
+      exportCsvMutation.isPending,
+      setActiveFilters,
+    ],
   );
 
   return (
