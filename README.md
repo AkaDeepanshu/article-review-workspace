@@ -288,14 +288,14 @@ The AI initially generated the `confirmImport` handler to re-parse the Excel fil
 
 ## Time Spent
 
-Approximately 14–16 hours over the assignment window, broken down roughly as:
+Approximately 16–18 hours over the assignment window, broken down roughly as:
 
 - Schema design and auth setup: ~2 hours
 - Import pipeline (parser, preview, confirm): ~4 hours
 - Article table (TanStack Table, pagination, filters, bulk actions): ~3 hours
 - Project/org management UI: ~2 hours
 - Tests: ~1.5 hours
-- Deployment attempts (Vercel + AWS): ~2 hours
+- Deployment (Vercel + AWS via SST): ~5 hours
 - README and cleanup: ~1 hour
 
 ---
