@@ -8,10 +8,11 @@ ArticleDesk is a collaborative workspace for researchers to import, organize, an
 
 ## Live Demo
 
-**Live URL:** [https://article-review-workspace-zeta.vercel.app/](https://article-review-workspace-zeta.vercel.app/)
+**AWS (CloudFront):** [https://d2ezyfly1hl2dt.cloudfront.net/](https://d2ezyfly1hl2dt.cloudfront.net/)
 
-> Deployment to AWS was attempted but not completed within the assignment window due to SST configuration issues with CloudFront and SSM Parameter Store. The Vercel deployment is live.
- 
+**Vercel:** [https://article-review-workspace-zeta.vercel.app/](https://article-review-workspace-zeta.vercel.app/)
+
+> Both deployments run the same codebase from `main`. Vercel auto-deploys on push; AWS is deployed via SST Ion with CloudFront as the CDN.
 
 **Demo credentials:**
 
@@ -82,6 +83,7 @@ Open [http://localhost:3000](http://localhost:3000) and sign in with the demo cr
 | Table | TanStack Table v8 |
 | Excel parsing | ExcelJS |
 | Testing | Vitest |
+| Infrastructure | SST Ion + AWS (CloudFront, Lambda, API Gateway) |
 
 ---
 
@@ -219,7 +221,6 @@ Tests cover the behaviors most likely to have subtle bugs or to regress:
 
 **Known gaps and what I'd address next:**
 - **`confirmImport` trust boundary** — as noted above, the server should store parsed rows and confirm by token rather than accepting the client's rows verbatim
-- **No AWS deployment** — SST setup with CloudFront and SSM Parameter Store ran into issues I couldn't resolve in the available time. The app is fully deployable on Vercel
 - **No optimistic updates** — status changes wait for the server round-trip before updating the UI. For a table with many rows this is noticeable; `onMutate` optimistic updates would fix it
 - **No inter-rater view** — there's no way to see another reviewer's decisions or compare them, which would be essential for real SLR consensus workflows
 - **No invite emails** — inviting a member requires the user to already exist in the database. A real flow would send an email invitation
@@ -228,15 +229,38 @@ Tests cover the behaviors most likely to have subtle bugs or to regress:
 
 ## Deployment
 
-The app targets Vercel for deployment. `NEXTAUTH_URL` is intentionally omitted from `env.js` because NextAuth v5 auto-infers the URL in serverless environments.
+### Vercel
 
-For AWS/SST deployment, the intended approach was:
-- SST Ion with a Next.js component
-- RDS Postgres or Supabase for the database
-- Secrets via SSM Parameter Store
-- CloudFront for CDN
+`NEXTAUTH_URL` is intentionally omitted from `env.js` because NextAuth v5 auto-infers the URL in serverless environments. Push to `main` and Vercel auto-deploys.
 
-This was attempted but not completed. The Vercel deployment is fully functional.
+Environment variables set in Vercel dashboard:
+- `AUTH_SECRET`
+- `DATABASE_URL`
+- `DIRECT_URL`
+
+### AWS (SST Ion)
+
+Infrastructure is defined in `sst.config.ts` and deployed with:
+
+```bash
+npx sst deploy --stage prod
+```
+
+**What SST provisions:**
+- Next.js app via the `aws-nextjs` component (Lambda + API Gateway)
+- CloudFront distribution as the CDN layer
+
+**Secrets:** All environment variables are stored in AWS SSM Parameter Store under `/articledesk/prod/*` and injected at deploy time via SST's `Secret` construct. No secrets are committed to the repository.
+
+**Database migrations:** Migrations run automatically as part of the Next.js build step (`prisma migrate deploy` is called in the `build` script in `package.json`). The database is hosted on Supabase — the same instance used by Vercel, with connection strings pulled from SSM.
+
+**Logs:** Lambda function logs are available in CloudWatch under the auto-generated log group for the SST-deployed function.
+
+**Failure modes:**
+- If SSM parameters are missing or misconfigured, the build fails at the `env.js` validation step with a descriptive error rather than silently at runtime.
+- Database connection failures surface as tRPC errors with a 500 response; the UI shows an error state.
+
+**Cost:** Within AWS Free Tier for low traffic. CloudFront and Lambda usage at this scale cost effectively $0/month. Supabase free tier handles the database.
 
 ---
 
